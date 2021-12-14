@@ -18,30 +18,30 @@ ftp_port = int(os.environ['PORT'])
 #RETRIVE SECRETS FROM SECRETS MANAGER
 session = boto3.session.Session()
 secrets_manager = session.client(
-    service_name='secretsmanager',
-    region_name=region_name
+    service_name = 'secretsmanager',
+    region_name = region_name
     )
 
 secrets_response = secrets_manager.get_secret_value(
-    SecretId=secret_name
+    SecretId = secret_name
     )
     
 secrets_dict = json.loads(secrets_response['SecretString'])
 
 
-hostname=secrets_dict['SFTP_TEST_SERVER_HOST']
-username=secrets_dict['SFTP_TEST_SERVER_USERNAME']
-password=secrets_dict['SFTP_TEST_SERVER_PASSWORD']
+hostname = secrets_dict['SFTP_TEST_SERVER_HOST']
+username = secrets_dict['SFTP_TEST_SERVER_USERNAME']
+password = secrets_dict['SFTP_TEST_SERVER_PASSWORD']
 
 
 
 #SET UP SFTP CONNECTION USING PARAMIKO
-ssh_client =paramiko.SSHClient()
+ssh_client = paramiko.SSHClient()
 ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 ssh_client.connect(
-    hostname=secrets_dict['SFTP_TEST_SERVER_HOST'],
-    username=secrets_dict['SFTP_TEST_SERVER_USERNAME'],
-    password=secrets_dict['SFTP_TEST_SERVER_PASSWORD']
+    hostname = secrets_dict['SFTP_TEST_SERVER_HOST'],
+    username = secrets_dict['SFTP_TEST_SERVER_USERNAME'],
+    password = secrets_dict['SFTP_TEST_SERVER_PASSWORD']
     )
 
 
@@ -54,7 +54,7 @@ def open_ftp_connection(ftp_host, ftp_port, ftp_username, ftp_password):
     except Exception:
         return 'conn_error'
     try:
-        transport.connect(username=ftp_username, password=ftp_password)
+        transport.connect(username = ftp_username, password = ftp_password)
     except Exception:
         return 'auth_error'
     ftp_connection = paramiko.SFTPClient.from_transport(transport)
@@ -75,22 +75,22 @@ files_to_upload = ftp_connection.listdir()
 MB = 1024 ** 2
 GB = 1024 ** 3
 MULTIPART_THRESHOLD = 100 * MB
-MULTIPART_CHUNKSIZE=20 * MB
-MAX_CONCURRENCY=10
-USER_THREADS=True
+MULTIPART_CHUNKSIZE = 20 * MB
+MAX_CONCURRENCY = 10
+USER_THREADS = True
 
 config = TransferConfig(
-    multipart_threshold=MULTIPART_THRESHOLD, 
-    multipart_chunksize=MULTIPART_CHUNKSIZE,
-    max_concurrency=MAX_CONCURRENCY,
-    use_threads=True)
+    multipart_threshold = MULTIPART_THRESHOLD, 
+    multipart_chunksize = MULTIPART_CHUNKSIZE,
+    max_concurrency = MAX_CONCURRENCY,
+    use_threads = True)
 
 
 #UPLOAD TO S3 ALL FILES IN SFTP DIRECTORY PATH
 for ftp_file in files_to_upload:
     sftp_file_obj = ftp_connection.file(ftp_file, mode='r')
     s3_connection = boto3.client('s3')
-    s3_connection.upload_fileobj(sftp_file_obj, my_bucket, ftp_file, Config=config)
+    s3_connection.upload_fileobj(sftp_file_obj, my_bucket, ftp_file, Config = config)
     
 
 #OPTIONAL -- ZIP FILES INTO A SEPARATE FOLDER CALLED 'ZIPPEDFILES'
@@ -107,7 +107,7 @@ s3 = boto3.resource('s3')
 my_bucket = s3.Bucket(my_bucket)
 zip_files = my_bucket.objects.filter()
 
-# DOWNLOAD FILES INTO FARGATE CURRENT PWD
+#DOWNLOAD FILES INTO FARGATE CURRENT PWD
 for s3_object in my_bucket.objects.all():
     filename = s3_object.key
     my_bucket.download_file(s3_object.key, filename)
@@ -127,4 +127,4 @@ for subdir, dirs, files in os.walk(path):
     for file in files:
         full_path = os.path.join(subdir, file)
         with open(full_path, 'rb') as data:
-            my_bucket.put_object(Key=full_path[len(path)+1:], Body=data)
+            my_bucket.put_object(Key = full_path[len(path)+1:], Body = data)
